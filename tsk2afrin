@@ -1,0 +1,95 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+
+// Initialize express app
+const app = express();
+
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// In-memory storage for courses
+let courses = [];
+let courseIdCounter = 1;
+
+// 1. CREATE - Add a new course
+app.post('/api/courses', (req, res) => {
+    const { title, description, duration } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !duration) {
+        return res.status(400).json({ 
+            error: 'Missing required fields. Please provide title, description, and duration.' 
+        });
+    }
+
+    // Create new course object
+    const course = {
+        id: courseIdCounter++,
+        title,
+        description,
+        duration,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    };
+
+    courses.push(course);
+    res.status(201).json(course);
+});
+
+// 2. READ - Get all courses
+app.get('/api/courses', (req, res) => {
+    res.json(courses);
+});
+
+// 3. READ - Get a specific course by ID
+app.get('/api/courses/:id', (req, res) => {
+    const courseId = parseInt(req.params.id);
+    const course = courses.find(c => c.id === courseId);
+
+    if (!course) {
+        return res.status(404).json({ error: 'Course not found' });
+    }
+
+    res.json(course);
+});
+
+// 4. UPDATE - Update a course
+app.put('/api/courses/:id', (req, res) => {
+    const courseId = parseInt(req.params.id);
+    const courseIndex = courses.findIndex(c => c.id === courseId);
+
+    if (courseIndex === -1) {
+        return res.status(404).json({ error: 'Course not found' });
+    }
+
+    const { title, description, duration } = req.body;
+    const updatedCourse = {
+        ...courses[courseIndex],
+        title: title || courses[courseIndex].title,
+        description: description || courses[courseIndex].description,
+        duration: duration || courses[courseIndex].duration,
+        updatedAt: new Date()
+    };
+
+    courses[courseIndex] = updatedCourse;
+    res.json(updatedCourse);
+});
+
+// 5. DELETE - Delete a course
+app.delete('/api/courses/:id', (req, res) => {
+    const courseId = parseInt(req.params.id);
+    const courseIndex = courses.findIndex(c => c.id === courseId);
+
+    if (courseIndex === -1) {
+        return res.status(404).json({ error: 'Course not found' });
+    }
+
+    courses.splice(courseIndex, 1);
+    res.status(204).send();
+});
+
+// Start the server
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
